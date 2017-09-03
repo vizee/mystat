@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"syscall"
 )
 
 func main() {
-	data, err := ioutil.ReadFile("20170903180822-8428.stat")
+	data, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
@@ -38,6 +39,6 @@ func main() {
 				times uint32
 			}{code, times})
 		}
-		fmt.Printf("at: %d, cnt: %d\nkeys: %+v\n", stat.at.Nanoseconds(), stat.cnt, stat.keys3)
+		fmt.Printf("at: %d, cnt: %d\nkeys: %+v\n", stat.at.Nanoseconds(), stat.cnt, stat.keys)
 	}
 }
