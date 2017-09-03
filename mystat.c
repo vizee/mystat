@@ -9,6 +9,13 @@
 
 static HANDLE stat_file = INVALID_HANDLE_VALUE;
 
+#ifdef USE_BUFIO
+#define stat_bufszie 4096
+
+static BYTE stat_buf[stat_bufszie];
+static DWORD stat_bufp = 0;
+#endif
+
 static HHOOK kbd_hook = NULL;
 static DWORD has_ctrl = 0;
 static DWORD has_alt = 0;
@@ -79,6 +86,36 @@ LRESULT CALLBACK kbd_proc(int nCode, WPARAM wParam, LPARAM lParam) {
     return CallNextHookEx(kbd_hook, nCode, wParam, lParam);
 }
 
+#ifdef USE_BUFIO
+void flush_stat() {
+    if (stat_bufp == 0) {
+        return;
+    }
+    DWORD written;
+    BOOL ok = WriteFile(stat_file, stat_buf, stat_bufp, &written, NULL);
+    if (!ok) {
+        dprintf(TEXT("[mystat] WriteFile() failed: %lu"), GetLastError());
+    }
+    stat_bufp = 0;
+}
+#endif
+
+void write_stat(void *data, size_t n) {
+#ifdef USE_BUFIO
+    if (stat_bufp + n > stat_bufszie) {
+        flush_stat();
+    }
+    CopyMemory(&stat_buf[stat_bufp], data, n);
+    stat_bufp += n;
+#else
+    DWORD written;
+    BOOL ok = WriteFile(stat_file, data, n, &written, NULL);
+    if (!ok) {
+        dprintf(TEXT("[mystat] WriteFile() failed: %lu"), GetLastError());
+    }
+#endif
+}
+
 DWORD WINAPI stat_proc(LPVOID lpParameter) {
     dprintf(TEXT("[mystat] stat_proc() start"));
     struct key_stat {
@@ -107,20 +144,15 @@ DWORD WINAPI stat_proc(LPVOID lpParameter) {
             stat.count++;
         }
         if (stat.count > 0) {
-            DWORD written;
-            BOOL ok = WriteFile(
-                    stat_file,
-                    &stat, sizeof(FILETIME) + sizeof(DWORD) + stat.count * sizeof(struct key_stat),
-                    &written,
-                    NULL);
-            if (!ok) {
-                dprintf(TEXT("[mystat] WriteFile() failed: %lu"), GetLastError());
-            }
+            write_stat(&stat, sizeof(FILETIME) + sizeof(DWORD) + stat.count * sizeof(struct key_stat));
         }
         ZeroMemory(&kbd_stat[cur], sizeof(LONG) * 256);
         offset = GetTickCount() - before;
         dprintf(TEXT("[mystat] stat cost: %dms"), offset);
     }
+#ifdef USE_BUFIO
+    flush_stat();
+#endif
     dprintf(TEXT("[mystat] stat_proc() exit"));
     return 0;
 }
