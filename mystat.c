@@ -66,6 +66,7 @@ LRESULT CALLBACK kbd_proc(int nCode, WPARAM wParam, LPARAM lParam) {
             default:
                 prev_m = 0;
             }
+            InterlockedIncrement(&kbd_stat[kbd_cur][hs->vkCode]);
             break;
         case WM_KEYUP:
         case WM_SYSKEYUP:
@@ -80,8 +81,6 @@ LRESULT CALLBACK kbd_proc(int nCode, WPARAM wParam, LPARAM lParam) {
             }
             break;
         }
-
-        InterlockedIncrement(&kbd_stat[kbd_cur][hs->vkCode]);
     }
     return CallNextHookEx(kbd_hook, nCode, wParam, lParam);
 }
