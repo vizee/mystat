@@ -23,6 +23,7 @@ func main() {
 				times uint32
 			}
 		}
+		aps := uint32(0)
 		stat.at.LowDateTime = binary.LittleEndian.Uint32(data[p:])
 		p += 4
 		stat.at.HighDateTime = binary.LittleEndian.Uint32(data[p:])
@@ -38,7 +39,8 @@ func main() {
 				code  uint32
 				times uint32
 			}{code, times})
+			aps += times
 		}
-		fmt.Printf("at: %d, cnt: %d\nkeys: %+v\n", stat.at.Nanoseconds(), stat.cnt, stat.keys)
+		fmt.Printf("at: %d, aps: %d, cnt: %d\nkeys: %+v\n", stat.at.Nanoseconds(), aps, stat.cnt, stat.keys)
 	}
 }

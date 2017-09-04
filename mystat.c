@@ -61,6 +61,7 @@ LRESULT CALLBACK kbd_proc(int nCode, WPARAM wParam, LPARAM lParam) {
             case 'Y':
                 if (prev_m && has_ctrl && has_alt) {
                     dprintf(TEXT("[mystat] post quit"));
+                    UnhookWindowsHookEx(kbd_hook);
                     PostQuitMessage(0);
                 }
             default:
@@ -190,7 +191,6 @@ int main() {
     while (GetMessageW(&msg, NULL, 0, 0)) {
         DispatchMessageW(&msg);
     }
-    UnhookWindowsHookEx(kbd_hook);
     isquit = 1;
     WaitForSingleObject(stat_th, INFINITE);
     CloseHandle(stat_th);
